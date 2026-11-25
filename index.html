@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101411">
+  <meta name="description" content="影院选座与三维座位视角的交互原型。">
+  <title>映前 · 影院选座</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="hall-data.js"></script>
+  <script defer src="auditorium.js"></script>
+  <script defer src="analysis-view.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>映前<span class="brand-en">BEFORE THE FILM</span></div>
+      <span class="prototype">独立课程演示</span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="page-heading">
+      <div>
+        <div class="showtime"><span class="hall" id="hall-tag"></span><span id="cinema-name"></span></div>
+        <h1>影院选座</h1>
+      </div>
+      <div class="controls">
+        <div class="control-line">
+          <span>影厅</span>
+          <div class="mode-switch" id="hall-switch" role="group" aria-label="影厅类型"></div>
+        </div>
+        <div class="control-line">
+          <div class="mode-switch" role="group" aria-label="影院页面">
+            <button type="button" id="seating-entry">选座</button>
+            <button type="button" id="analysis-entry" aria-controls="analysis-view">俯视与视线分析</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <details class="data-source">
+      <summary>资料来源与估算 <span id="source-status"></span></summary>
+      <div class="source-body">
+        <div class="source-layout" id="source-layout" role="group" aria-label="座位布局口径">
+          <span>座位布局</span>
+          <div class="mode-switch">
+            <button type="button" data-basis="workbook">工作簿重建</button>
+            <button type="button" data-basis="ticket">票务存档</button>
+          </div>
+        </div>
+        <p><strong>银幕</strong> <span id="screen-source-note"></span> <a id="screen-source" target="_blank" rel="noopener noreferrer">查看出处</a></p>
+        <p><strong>座位图</strong> <span id="seat-source-note"></span> <a id="seat-source" target="_blank" rel="noopener noreferrer">查看出处</a></p>
+        <p><strong>模型参数</strong> <span id="model-parameters"></span></p>
+      </div>
+    </details>
+
+    <div class="workspace" id="workspace">
+      <section class="panel map-panel" id="map-panel" aria-labelledby="map-title">
+        <div class="panel-heading">
+          <h2 id="map-title">座位图</h2>
+          <span class="panel-meta" id="map-meta"></span>
+        </div>
+        <div class="map" id="map" aria-label="影厅座位图">
+          <div class="screen-mark" aria-hidden="true"><span id="screen-mark-label">银幕</span></div>
+          <div class="seat-scroll" id="seat-scroll">
+            <div id="seat-grid" class="seat-grid" aria-describedby="selection-status"></div>
+          </div>
+          <span id="scroll-hint" class="scroll-hint" hidden>横滑查看两侧座位</span>
+        </div>
+        <div class="legend" aria-label="座位图例">
+          <span><i class="key available" aria-hidden="true"></i>可预览</span>
+          <span><i class="key selected" aria-hidden="true"></i>已选</span>
+          <span class="preview-only"><i class="key viewing" aria-hidden="true"></i>正在预览</span>
+        </div>
+      </section>
+
+      <section class="panel preview-panel" id="preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading">
+          <h2 id="preview-title">影厅预览</h2>
+          <span class="panel-meta" id="preview-meta"></span>
+        </div>
+        <div id="perspective-view" class="perspective-view">
+          <div class="viewport" id="viewport">
+            <canvas id="auditorium" tabindex="0" aria-label="三维观影视角。上下方向键前后换排，左右方向键转头。总览时滚轮缩放。"></canvas>
+            <div class="view-vignette" aria-hidden="true"></div>
+            <div class="view-seat" id="view-seat" role="status" hidden></div>
+            <button type="button" class="camera-button side-camera" id="side-camera" hidden>斜侧看台阶</button>
+            <div class="world-seat" id="world-seat" aria-hidden="true" hidden></div>
+            <div class="view-empty" id="view-empty" hidden>选一个座位，即可预览视角</div>
+            <div class="view-error" id="view-error" role="status" hidden>当前浏览器无法渲染三维影厅。仍可使用俯视分析。</div>
+            <div class="view-drag" id="view-drag"><span aria-hidden="true">⟷</span> 拖动环视</div>
+            <button type="button" class="camera-button" id="camera-view" hidden>影厅总览</button>
+          </div>
+          <div class="preview-footer">
+            <div class="view-metrics" id="view-metrics" aria-live="polite"></div>
+            <div class="preview-actions">
+              <div id="row-navigation" class="row-navigation" role="group" aria-label="前后换排">
+                <button type="button" class="quiet-button" id="row-forward" aria-keyshortcuts="ArrowUp"><span aria-hidden="true">↑</span> 前一排</button>
+                <button type="button" class="quiet-button" id="row-back" aria-keyshortcuts="ArrowDown"><span aria-hidden="true">↓</span> 后一排</button>
+              </div>
+              <button type="button" class="quiet-button" id="select-viewing">选此座</button>
+              <button type="button" class="quiet-button" id="reset-view">回正视角</button>
+            </div>
+          </div>
+        </div>
+        <div id="analysis-view" class="analysis-view" hidden>
+          <section class="chart" aria-labelledby="plan-heading">
+            <div class="chart-heading"><h3 id="plan-heading">水平视线</h3><span id="analysis-seat" class="panel-meta"></span></div>
+            <canvas id="plan-view" role="img" aria-label="影厅俯视图，显示座位朝向、银幕两端和银幕中心的视线"></canvas>
+            <div class="chart-key">
+              <span class="acoustics-key" hidden><i class="speaker-key"></i>假设扬声器</span>
+              <span class="acoustics-key" hidden><i class="field-key"></i>相对声强</span>
+              <span><i class="center-key"></i>银幕中心</span>
+              <span><i class="eye-key"></i>座位朝向</span>
+            </div>
+            <label class="acoustic-toggle"><input type="checkbox" id="show-acoustics"> 显示假设声场</label>
+          </section>
+          <section class="chart" aria-labelledby="profile-heading">
+            <div class="chart-heading"><h3 id="profile-heading">台阶与视线侧剖</h3><span id="profile-rise" class="panel-meta"></span></div>
+            <canvas id="profile-view" role="img" aria-label="等比例侧剖图，显示逐排台阶、座位眼高水平线、字幕视线和银幕中心视线"></canvas>
+            <div class="chart-key">
+              <span><i class="tread-key"></i>逐排台阶</span>
+              <span><i class="eye-key"></i>眼高水平线</span>
+              <span><i class="center-key"></i>银幕中心</span>
+              <span><i class="subtitle-key"></i>字幕</span>
+            </div>
+          </section>
+          <dl id="analysis-metrics" class="analysis-metrics" aria-live="polite"></dl>
+          <p class="chart-note" id="chart-note">角度按重建几何估算。仰角为负值时，目标低于座位眼高。</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="selection" aria-labelledby="selection-title">
+      <div class="selection-info">
+        <h2 id="selection-title">已选座位 <span id="seat-count"></span></h2>
+        <p id="selection-status" role="status">最多可选 4 座</p>
+      </div>
+      <div class="seat-chips" id="seat-chips" aria-label="已选座位"></div>
+      <div class="selection-actions">
+        <button type="button" class="quiet-button" id="clear-selection">清空</button>
+        <button type="button" class="quiet-button" id="preview-selection" aria-controls="perspective-view">预览视角</button>
+        <button type="button" class="book-button" id="book-seats">确认座位</button>
+      </div>
+    </section>
+
+    <dialog id="booking-dialog" aria-labelledby="booking-title">
+      <form method="dialog">
+        <h2 id="booking-title">确认所选座位</h2>
+        <p id="booking-hall"></p>
+        <p id="booking-seats" class="booking-seats"></p>
+        <p class="booking-note">课程原型，仅模拟确认。</p>
+        <div class="selection-actions booking-actions">
+          <button type="submit" value="cancel" class="quiet-button" autofocus>返回</button>
+          <button type="submit" value="confirm" class="book-button">确认模拟选座</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>
