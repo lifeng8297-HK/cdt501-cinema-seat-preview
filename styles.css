@@ -159,6 +159,25 @@ button.seat-chip:hover { border-color: var(--accent); }
 .booking-seats { color: var(--accent); font-weight: 650; }
 .booking-note { color: var(--muted); font-size: 13px; }
 .booking-actions { padding-top: 8px; }
+.exit-guide { width: min(100%, 870px); min-height: auto; margin-inline: auto; }
+.exit-heading { align-items: flex-start; }
+.exit-heading h2 { font-size: 25px; }
+.exit-heading h2:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.exit-confirmed { color: var(--accent); font-size: 13px; margin: 0 0 5px; }
+.exit-notice { margin: 0 0 15px; padding: 10px 12px; border: 1px solid #6b5a36; border-radius: 8px; color: #f1d5a3; background: #2c271c; font-size: 14px; line-height: 1.55; }
+.exit-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; }
+.exit-map { min-width: 0; margin: 0; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: #121c16; }
+#exit-map { display: block; width: 100%; height: clamp(300px, 56vh, 480px); }
+.exit-map figcaption { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; padding: 4px; font-size: 12px; color: var(--muted); }
+.exit-map figcaption span { display: inline-flex; align-items: center; gap: 6px; }
+.exit-route-key { width: 14px; height: 3px; border-radius: 2px; background: var(--accent); }
+.exit-door-key { padding: 0 3px; border: 1px solid #7d9c88; border-radius: 2px; color: #e3ebdd; }
+.exit-details { padding-block: 8px; min-width: 0; }
+.exit-details label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 14px; }
+.exit-details select { max-width: 100%; padding: 7px 10px; border: 1px solid #52644f; border-radius: 7px; background: #202e23; color: var(--ink); font: inherit; }
+.exit-summary { color: var(--accent); line-height: 1.5; }
+.exit-steps { margin: 0; padding-left: 1.45em; line-height: 1.65; font-size: 14px; }
+.exit-steps li + li { margin-top: 7px; }
 
 @media (max-width: 1120px) {
   :root { --seat-gap: 4px; }
@@ -180,6 +199,9 @@ button.seat-chip:hover { border-color: var(--accent); }
   .viewport, .wide-map .viewport { min-height: 0; aspect-ratio: 16 / 10; }
 }
 @media (max-width: 540px) {
+  .exit-layout { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+  .exit-details { order: -1; padding-inline: 5px; }
+  #exit-map { height: 324px; }
   :root { --seat-gap: 3px; --row-label-width: 19px; }
   .shell { width: calc(100% - 28px); }
   .topbar-inner { min-height: 56px; }

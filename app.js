@@ -24,6 +24,7 @@
   let previewIntro = false;
   let previewTimer;
   let returningToMap = false;
+  let confirmedSeats;
 
   const get = id => document.getElementById(id);
   const grid = get('seat-grid');
@@ -54,6 +55,9 @@
   const selectViewing = get('select-viewing');
   const booking = get('booking-dialog');
   const bookSeats = get('book-seats');
+  const exitPanel = get('exit-guide');
+  const exitMap = get('exit-map');
+  const exitSeat = get('exit-seat');
   const basisButtons = Array.from(document.querySelectorAll('[data-basis]'));
   const hallButtons = new Map();
   const seatButtons = new Map();
@@ -379,21 +383,65 @@
     preview.scrollIntoView({ block: 'nearest' });
   }
 
+  function drawExitRoute() {
+    if (mode !== 'exit' || !confirmedSeats) return;
+    const { hall: model, seats } = confirmedSeats;
+    const seat = model.seatMap.get(exitSeat.value);
+    const route = ExitGuide.route(model, seat);
+    const { exit, distance } = route;
+    get('exit-summary').textContent = `示意出口 ${exit.id} · ${exit.label}。模型平面距离 ${distance.toFixed(1)} m。`;
+    const steps = [
+      `从 ${seat.row} 排 ${seat.number} 座进入本排通道。`,
+      `面向银幕，沿本排往${exit.side}侧通道。`,
+      `沿侧通道往${exit.end}，到达示意出口 ${exit.id}。`
+    ];
+    get('exit-steps').replaceChildren(...steps.map(step => {
+      const item = document.createElement('li');
+      item.textContent = step;
+      return item;
+    }));
+    ExitGuide.draw(exitMap, model, seats, seat, route);
+  }
+
+  function showExitGuide() {
+    stopPreviewFlow();
+    travel = undefined;
+    const seats = Array.from(session.selected, id => hall.seatMap.get(id));
+    if (!seats.length) return;
+    confirmedSeats = { hall, seats };
+    exitSeat.replaceChildren(...seats.map(seat => new Option(`${seat.row} 排 ${seat.number} 座`, seat.id)));
+    if (session.selected.has(session.viewing)) exitSeat.value = session.viewing;
+    mode = 'exit';
+    render();
+    drawExitRoute();
+    const title = get('exit-title');
+    title.focus({ preventScroll: true });
+    exitPanel.scrollIntoView({ block: 'nearest' });
+  }
+
   function render() {
     const previewing = mode === 'preview';
+    const showingRoute = mode === 'exit';
     const focusedPreview = previewing && view === '3d';
     const seat = hall.seatMap.get(session.viewing);
     workspace.classList.toggle('map-only', !previewing);
     workspace.classList.toggle('focused-preview', focusedPreview);
     workspace.classList.toggle('wide-map', hall.columns > 12);
+    workspace.hidden = showingRoute;
+    get('seat-selection').hidden = showingRoute;
+    exitPanel.hidden = !showingRoute;
     mapPanel.hidden = focusedPreview;
     preview.hidden = !previewing;
     perspective.hidden = view !== '3d';
     get('analysis-view').hidden = view !== 'analysis';
-    seatingEntry.setAttribute('aria-pressed', view !== 'analysis');
-    analysisEntry.setAttribute('aria-pressed', view === 'analysis');
+    seatingEntry.setAttribute('aria-pressed', !showingRoute && view !== 'analysis');
+    analysisEntry.setAttribute('aria-pressed', previewing && view === 'analysis');
     get('preview-title').textContent = view === 'analysis' ? '俯视与视线分析' : '座位视角预览';
-    for (const [id, button] of hallButtons) button.setAttribute('aria-pressed', id === hall.caseId);
+    for (const [id, button] of hallButtons) {
+      button.disabled = showingRoute;
+      button.setAttribute('aria-pressed', id === hall.caseId);
+    }
+    for (const button of basisButtons) button.disabled = showingRoute;
     for (const [id, button] of seatButtons) {
       button.setAttribute('aria-pressed', session.selected.has(id));
       button.classList.toggle('viewing', previewing && id === session.viewing);
@@ -549,8 +597,11 @@
     booking.showModal();
   });
   booking.addEventListener('close', () => {
-    if (booking.returnValue === 'confirm') announce('已完成模拟选座确认');
+    if (booking.returnValue === 'confirm') showExitGuide();
   });
+  get('exit-back').addEventListener('click', showMap);
+  exitSeat.addEventListener('change', drawExitRoute);
+  new ResizeObserver(drawExitRoute).observe(exitMap);
   reset.addEventListener('click', recenter);
   for (const [button, offset] of [[rowForward, -1], [rowBack, 1]]) {
     button.addEventListener('click', () => moveRow(offset));

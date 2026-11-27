@@ -10,6 +10,7 @@
   <script defer src="hall-data.js"></script>
   <script defer src="auditorium.js"></script>
   <script defer src="analysis-view.js"></script>
+  <script defer src="exit-guide.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -133,7 +134,7 @@
       </section>
     </div>
 
-    <section class="selection" aria-labelledby="selection-title">
+    <section class="selection" id="seat-selection" aria-labelledby="selection-title">
       <div class="selection-info">
         <h2 id="selection-title">已选座位 <span id="seat-count"></span></h2>
         <p id="selection-status" role="status">最多可选 4 座</p>
@@ -143,6 +144,26 @@
         <button type="button" class="quiet-button" id="clear-selection">清空</button>
         <button type="button" class="quiet-button" id="preview-selection" aria-controls="perspective-view">预览视角</button>
         <button type="button" class="book-button" id="book-seats">确认座位</button>
+      </div>
+    </section>
+
+    <section class="panel exit-guide" id="exit-guide" aria-labelledby="exit-title" hidden>
+      <div class="panel-heading exit-heading">
+        <div><p class="exit-confirmed" role="status">已完成模拟选座确认</p><h2 id="exit-title" tabindex="-1">疏散路线示意</h2></div>
+        <button type="button" class="quiet-button" id="exit-back">返回座位图</button>
+      </div>
+      <p class="exit-notice">课程模拟。图中通道和出口为假设。实际疏散请遵循现场安全出口标识和工作人员指引。</p>
+      <div class="exit-layout">
+        <figure class="exit-map">
+          <canvas id="exit-map" role="img" aria-label="模拟影厅疏散路线图" aria-describedby="exit-summary"></canvas>
+          <figcaption><span><i class="exit-route-key"></i>示意路线</span><span><b class="exit-door-key">A</b>示意出口编号</span></figcaption>
+        </figure>
+        <div class="exit-details">
+          <label for="exit-seat">起点座位</label>
+          <select id="exit-seat"></select>
+          <p id="exit-summary" class="exit-summary" aria-live="polite"></p>
+          <ol class="exit-steps" id="exit-steps"></ol>
+        </div>
       </div>
     </section>
 
